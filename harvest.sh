@@ -1,6 +1,8 @@
 #!/bin/sh
 
-for g in *.ggx;
+# takes: list of files of url lists
+
+for g in $@;
 do
 	echo $g
 	i=0
@@ -9,9 +11,11 @@ do
 		cat=`basename $g .ggx`
 		ind=`echo $i | awk '{ printf("%03d", $1);}'`
 		b=`echo $url | sed 's/^\(.*\/\).*$/\1/' | sed 's/\//\\\\\//g' `
-		wget -O $cat.$ind.html "$url"
-		sed -i 's/<head>/<head><base href="'$b'"\/>/' $cat.$ind.html
 		let i++
+		echo "$cat - $ind"
+		test -f $cat.$ind.html && continue
+		wget --timeout=60 -o $cat.$ind.log --tries=2 -O $cat.$ind.html "$url" || continue
+		sed -i 's/<head>/<head><base href="'$b'"\/>/i' $cat.$ind.html
 	done
 done
 
