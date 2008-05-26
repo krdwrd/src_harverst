@@ -1,6 +1,8 @@
 #!/bin/sh
 
-# takes: list of files of url lists
+# takes: list of files of url lists (ending in .ggx)
+
+export LANG=en_US.UTF-8
 
 for g in $@;
 do
@@ -14,8 +16,10 @@ do
 		let i++
 		echo "$cat - $ind"
 		test -f $cat.$ind.html && continue
-		wget --timeout=60 -o $cat.$ind.log --tries=2 -O $cat.$ind.html "$url" || continue
-		sed -i 's/<head>/<head><base href="'$b'"\/>/i' $cat.$ind.html
+		FN=$cat.$ind.html
+		wget --timeout=60 -o $cat.$ind.log --tries=2 -O $FN "$url" || continue
+		sed 's/<head>/<head><base href="'$b'"\/>/i' $FN > $FN.orig
+		iconv -t utf-8 $FN.orig -o $FN
 	done
 done
 
