@@ -40,9 +40,9 @@ do
         cp $FN $FN.orig
         iconv -c -t utf8 -f $ENC $FN.orig -o $FN >> $cat.$ind.log
         # replace previous charset definition
-        sed -i 's/\(^.*charset=\)[0-9a-zA-Z_-]*\(".*$\)/\1UTF-8\2/' $FN
         sed -i 's/<meta http-equiv\ *=\ *"content-type"[^>]*>//i' $FN
-        # fix base url
+        sed -i '1 s/<?xml[^>]*?>/<?xml version="1.0" encoding="utf-8"?>/' $FN
+        # fix base url, insert encoding info
         sed -i 's/<head>/<head><base href="'$b'"\/><meta http-equiv="Content-Type" content="text\/html; charset=utf-8">/i' $FN 
 
     done
