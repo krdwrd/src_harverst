@@ -1,3 +1,4 @@
+#!/bin/bash
 # requires:
 #
 # BootCaT > 0.1.9 (= 0.1.9 with local modifications; we'll try to get this upstream...)
@@ -5,10 +6,10 @@
 # baseline corpus frequencies format "word count" in $BP/CORPUSNAME.f
 
 # do we want script specific infos?
-INFOMSGS=0  # no // 1 # yes
+INFOMSGS=0  # no // 1 # yes : -v
 
 # base path
-[[ ${0} == 'bash' ]] && BP=$(pwd) || BP=$(dirname ${0})
+BP=$(pwd) || BP=$(dirname ${0})
 # ...in case we have some modified commands - use these!
 PATH=$BP:$PATH
 
@@ -154,38 +155,46 @@ function secondpass {
     rm -f ${SFREQ}
     # remember the output (because we need it for later calculations)
     REF=$( \
-        add1_smoothing.pl -t $CFREQ $F   2>&1 |\
-        tail -n2 |\
-        head -n1 \
-        )
+        add1_smoothing.pl -t <(bunzip2 -c $CFREQ 2>/dev/null || cat $CFREQ) $F   2>&1 \
+        | tail -n2 \
+        | head -n1 \
+    )
 
     # final word list
     TAR=$(wc -w <   $C1)
 
-    paste $F $SFREQ |\
-        awk '{print $1,$2,$4}' |\
-        log_odds_ratio.pl $TAR $REF - |\
-        sort -nrk2   > $WR
+    paste $F $SFREQ \
+    | awk '{print $1,$2,$4}' \
+    | log_odds_ratio.pl $TAR $REF - \
+    | sort -nrk2 \
+    > $WR
 
     # get top words
     TWR=$BP/twords
 
-    head -n100 $WR |\
-        # grep -v -i 'blog' |\
-        awk '{print $1;}'   > $TWR
+    # ?after head: grep -v -i 'blog' |\
+    head -n100 $WR \
+    | awk '{print $1;}' \
+    > $TWR
 
     # 2nd tuples
     TUP=$BP/tup
-    build_random_tuples.pl -l90 -n2 $TWR   > $TUP
+    build_random_tuples.pl -l90 -n2 $TWR \
+    > $TUP
+    
     (( INFOMSGS )) && echo "build_random_tuples.pl - got $(wc -l < ${TUP} 2>/dev/null) tuples."
 
     # final (uncleand) url list
-    collect_urls_from_yahoo.pl -l ${QLANG} -r ${CRIGHT} -c 50 $TUP   > $URLS
+    collect_urls_from_yahoo.pl -l ${QLANG} -r ${CRIGHT} -c 50 $TUP \
+    > $URLS
+    
     (( INFOMSGS )) && echo "collect_urls_from_yahoo.pl - got $(wc -l < ${URLS} 2>/dev/null) URLs."
 
     # final cleaned url list
-    grep -v QUERY $URLS |\
-        sort -u -t / -k 2,3   > $URLS.clean
+    grep -v QUERY $URLS \
+    | sort -u -t / -k 2,3 \
+    > $URLS.clean
+
     (( INFOMSGS )) && echo "> the final (cleaned) list contains $(wc -l < ${URLS}.clean 2>/dev/null) URLs."
 }
 
